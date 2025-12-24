@@ -1,5 +1,6 @@
 # Decisiones Técnicas
-## [Tu Nombre]
+
+## Pedro Abel Rivera Vera
 
 > **Nota**: Este es un archivo opcional pero recomendado. Documentar tus decisiones técnicas demuestra pensamiento crítico y puede sumar puntos extra en la evaluación.
 
@@ -7,10 +8,10 @@
 
 ## 📋 Información General
 
-- **Nombre del Candidato**: [Tu nombre completo]
-- **Fecha de Inicio**: [DD/MM/YYYY]
-- **Fecha de Entrega**: [DD/MM/YYYY]
-- **Tiempo Dedicado**: [Ej: ~20 horas]
+- **Nombre del Candidato**: Pedro Abel Rivera Vera
+- **Fecha de Inicio**: 23/12/2025
+- **Fecha de Entrega**: 25/12/2025
+- **Tiempo Dedicado**: 33 horas
 
 ---
 
@@ -43,7 +44,7 @@
 
 ### Estructura del Backend
 
-```
+```text
 backend/
 ├── src/
 │   ├── [tu estructura]
@@ -55,7 +56,7 @@ backend/
 
 ### Estructura del Frontend
 
-```
+```text
 frontend/
 ├── src/
 │   ├── [tu estructura]
@@ -69,18 +70,60 @@ frontend/
 
 ## 🗄️ Diseño de Base de Datos
 
-### Elección: MySQL / MongoDB
+### Elección: MongoDB
 
 **Razones:**
-- [Razón 1]
-- [Razón 2]
-- [Razón 3]
+
+1. **Flexibilidad del schema**: Las tareas pueden tener campos variables según el proyecto
+2. **Documentos embebidos**: Fácil almacenar arrays de collaborators y tasks sin joins
+3. **Escalabilidad horizontal**: Sharding nativo para futuros crecimientos
+4. **JSON nativo**: Comunicación directa con frontend sin transformaciones
+5. **Desarrollo ágil**: Cambios de schema sin migraciones complejas
 
 ### Schema/Modelos
 
-[Describe brevemente tus tablas/colecciones principales]
+#### User
+
+```typescript
+{
+  name: String,
+  email: String (unique, indexed),
+  password: String (hashed con bcrypt),
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Project
+
+```typescript
+{
+  name: String,
+  description: String,
+  owner: ObjectId (ref: User, indexed),
+  collaborators: [ObjectId] (ref: User),
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Task
+
+```typescript
+{
+  title: String,
+  description: String,
+  project: ObjectId (ref: User, indexed),
+  assignedTo: ObjectId (ref: User, indexed),
+  status: Enum ['pendiente', 'en progreso', 'completada'],
+  priority: Enum ['baja', 'media', 'alta'],
+  createdAt: Date,
+  updatedAt: Date
+}
+```
 
 **Decisiones importantes:**
+
 - **Normalización** (si usas MySQL): [Explica cómo normalizaste]
 - **Índices**: [Qué índices agregaste y por qué]
 - **Relaciones**: [Cómo manejaste las relaciones entre entidades]
@@ -108,7 +151,7 @@ frontend/
 
 ### Framework/Librería de UI
 
-**Elegí**: [Ninguna / Material-UI / Ant Design / TailwindCSS / etc.]
+**Elegí**: TailwindCSS
 
 **Razón**: [¿Por qué elegiste esto sobre otras opciones?]
 
@@ -130,11 +173,13 @@ frontend/
 ### Estrategia de Testing
 
 **Backend:**
+
 - [Tipo de tests que escribiste]
 - [¿Por qué elegiste probar estos endpoints/funciones específicamente?]
 - [Herramientas usadas]
 
 **Frontend:**
+
 - [Tipo de tests que escribiste]
 - [¿Qué componentes decidiste probar y por qué?]
 - [Herramientas usadas]
@@ -154,9 +199,10 @@ frontend/
 
 - [ ] Dockerfile backend
 - [ ] Dockerfile frontend
-- [ ] docker-compose.yml
+- [x] docker-compose.yml
 
 **Decisiones:**
+
 - [¿Por qué elegiste Alpine/Debian como base?]
 - [¿Usaste multi-stage builds? ¿Por qué?]
 - [¿Cómo optimizaste el tamaño de las imágenes?]
@@ -221,6 +267,7 @@ frontend/
 ### Trade-off 1: [Decisión]
 
 **Opciones consideradas:**
+
 - Opción A: [Descripción]
 - Opción B: [Descripción]
 
@@ -232,6 +279,7 @@ frontend/
 ### Trade-off 2: [Decisión]
 
 **Opciones consideradas:**
+
 - [...]
 
 **Elegí**: [...]
@@ -294,15 +342,19 @@ Lista de recursos que consultaste durante el desarrollo:
 [Opcional: Agrega capturas de pantalla de tu aplicación]
 
 ### Login
+
 ![Login](./screenshots/login.png)
 
 ### Dashboard
+
 ![Dashboard](./screenshots/dashboard.png)
 
 ### Lista de Proyectos
+
 ![Projects](./screenshots/projects.png)
 
 ### Detalle de Tareas
+
 ![Tasks](./screenshots/tasks.png)
 
 ---
