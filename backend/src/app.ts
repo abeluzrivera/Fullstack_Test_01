@@ -4,6 +4,7 @@ import cors from 'cors'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './config/swagger'
 import authRoutes from './routes/auth.routes'
+import entraAuthRoutes from './routes/entra-auth.routes'
 import projectRoutes from './routes/project.routes'
 import taskRoutes from './routes/task.routes'
 import dashboardRoutes from './routes/dashboard.routes'
@@ -33,6 +34,7 @@ app.get('/health', (_req: Request, res: Response) => {
 })
 
 app.use('/api/auth', authLimiter, authRoutes)
+app.use('/api/auth', authLimiter, entraAuthRoutes)
 app.use('/api/projects', apiLimiter, projectRoutes)
 app.use('/api/tasks', apiLimiter, taskRoutes)
 app.use('/api/dashboard', apiLimiter, dashboardRoutes)

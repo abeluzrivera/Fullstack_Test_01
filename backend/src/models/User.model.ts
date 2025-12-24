@@ -5,10 +5,12 @@ import console from 'console'
 export interface IUser extends Document {
   name: string
   email: string
-  password: string
+  password?: string
+  oid?: string // Azure Entra Object ID
+  loginProvider?: 'local' | 'entra-id'
   createdAt: Date
   updatedAt: Date
-  comparePassword(candidatePassword: string): Promise<boolean>
+  comparePassword?(candidatePassword: string): Promise<boolean>
 }
 
 const userSchema = new Schema<IUser>(
@@ -33,10 +35,21 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters'],
       maxlength: [30, 'Password cannot exceed 30 characters'],
       select: false,
+      default: null,
+    },
+    oid: {
+      type: String,
+      sparse: true,
+      unique: true,
+      description: 'Azure Entra Object ID',
+    },
+    loginProvider: {
+      type: String,
+      enum: ['local', 'entra-id'],
+      default: 'local',
     },
   },
   {
@@ -45,12 +58,12 @@ const userSchema = new Schema<IUser>(
 )
 
 userSchema.pre('save', async function (): Promise<void> {
-  if (!this.isModified('password')) return
+  // Solo hashear si password fue modificado y existe
+  if (!this.isModified('password') || !this.password) return
 
   try {
     const salt = await bcrypt.genSalt(10)
     const hash = await bcrypt.hash(this.password, salt)
-
     this.password = hash
   } catch (error: unknown) {
     console.error('Error hashing password:', error)
@@ -61,6 +74,8 @@ userSchema.pre('save', async function (): Promise<void> {
 userSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
+  if (!this.password) return false
+
   try {
     return await bcrypt.compare(candidatePassword, this.password)
   } catch (error: unknown) {

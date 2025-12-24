@@ -36,6 +36,10 @@ class AuthService {
       throw new Error('Invalid email or password')
     }
 
+    if (!user.comparePassword) {
+      throw new Error('Invalid email or password')
+    }
+
     const isPasswordValid = await user.comparePassword(data.password)
 
     if (!isPasswordValid) {
