@@ -7,6 +7,7 @@ import RecentProjects from '@/components/dashboard/RecentProjects'
 import ActivityOverview from '@/components/dashboard/ActivityOverview'
 import { useDashboardStats } from '@/hooks/useDashboard'
 import UserSettingsDialog from '@/components/user/UserSettingsDialog'
+import { messages } from '@/config/messages'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,42 +30,42 @@ export default function DashboardPage() {
 
   const statCards: StatCardProps[] = [
     {
-      title: 'Total Projects',
+      title: messages.dashboard.totalProjects,
       value: stats?.projects.total.toString() || '0',
       icon: 'folder' as const,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-500',
     },
     {
-      title: 'Total Tasks',
+      title: messages.dashboard.totalTasks,
       value: stats?.tasks.total.toString() || '0',
       icon: 'list' as const,
       bgColor: 'bg-indigo-50',
       iconColor: 'text-indigo-500',
     },
     {
-      title: 'Assigned to Me',
+      title: messages.dashboard.assignedToMe,
       value: stats?.tasks.assigned.toString() || '0',
       icon: 'trending' as const,
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-500',
     },
     {
-      title: 'To Do',
+      title: messages.dashboard.toDo,
       value: stats?.tasks.byStatus.pendiente?.toString() || '0',
       icon: 'circle' as const,
       bgColor: 'bg-gray-50',
       iconColor: 'text-gray-500',
     },
     {
-      title: 'In Progress',
+      title: messages.dashboard.inProgress,
       value: stats?.tasks.byStatus['en progreso']?.toString() || '0',
       icon: 'clock' as const,
       bgColor: 'bg-orange-50',
       iconColor: 'text-orange-500',
     },
     {
-      title: 'Completed',
+      title: messages.dashboard.completed,
       value: stats?.tasks.byStatus.completada?.toString() || '0',
       icon: 'check' as const,
       bgColor: 'bg-green-50',
@@ -77,9 +78,9 @@ export default function DashboardPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-8 py-4 flex items-center justify-between pl-16 lg:pl-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{messages.dashboard.welcomeTitle}</h1>
             <p className="text-gray-500 mt-1">
-              Welcome back, {user?.name || 'User'}!
+              {messages.dashboard.welcomeMessage(user?.name)}
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -99,14 +100,14 @@ export default function DashboardPage() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                   <SettingsIcon className="w-4 h-4 mr-2" />
-                  Settings
+                  {messages.header.settings}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="text-red-600"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  {messages.header.logout}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
