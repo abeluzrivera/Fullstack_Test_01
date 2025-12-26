@@ -91,6 +91,13 @@ export const getProjects = async (
     const search = req.query.search as string
 
     const result = await projectService.getProjects(userId, page, limit, search)
+    if (!result || !result.projects) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch projects',
+      })
+      return
+    }
     res.status(200).json({
       success: true,
       data: result.projects,

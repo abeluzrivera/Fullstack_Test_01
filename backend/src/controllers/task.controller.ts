@@ -241,6 +241,13 @@ export const deleteTask = async (
   try {
     const userId = req.user!._id
     const result = await taskService.deleteTask(req.params.id, userId)
+    if (!result) {
+      res.status(404).json({
+        success: false,
+        message: 'Task not found',
+      })
+      return
+    }
     res.status(200).json({
       success: true,
       message: result.message,

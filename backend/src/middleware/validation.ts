@@ -1,3 +1,5 @@
+// Alias para compatibilidad con tests existentes
+export { validate as validateRequest }
 import { Request, Response, NextFunction } from 'express'
 import { ZodType, ZodError } from 'zod'
 
