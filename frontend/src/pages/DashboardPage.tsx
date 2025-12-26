@@ -1,11 +1,9 @@
-import { LogOut } from 'lucide-react'
+import { LogOut, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
-import StatCard, { type StatCardProps } from '@/components/dashboard/StatCard'
 import RecentProjects from '@/components/dashboard/RecentProjects'
 import ActivityOverview from '@/components/dashboard/ActivityOverview'
 import { useDashboardStats } from '@/hooks/useDashboard'
-import { messages } from '@/config/messages'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,59 +23,18 @@ export default function DashboardPage() {
     navigate('/login')
   }
 
-  const statCards: StatCardProps[] = [
-    {
-      title: messages.dashboard.totalProjects,
-      value: stats?.projects.total.toString() || '0',
-      icon: 'folder' as const,
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-500',
-    },
-    {
-      title: messages.dashboard.totalTasks,
-      value: stats?.tasks.total.toString() || '0',
-      icon: 'list' as const,
-      bgColor: 'bg-indigo-50',
-      iconColor: 'text-indigo-500',
-    },
-    {
-      title: messages.dashboard.assignedToMe,
-      value: stats?.tasks.assigned.toString() || '0',
-      icon: 'trending' as const,
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-500',
-    },
-    {
-      title: messages.dashboard.toDo,
-      value: stats?.tasks.byStatus.pendiente?.toString() || '0',
-      icon: 'circle' as const,
-      bgColor: 'bg-gray-50',
-      iconColor: 'text-gray-500',
-    },
-    {
-      title: messages.dashboard.inProgress,
-      value: stats?.tasks.byStatus['en progreso']?.toString() || '0',
-      icon: 'clock' as const,
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-500',
-    },
-    {
-      title: messages.dashboard.completed,
-      value: stats?.tasks.byStatus.completada?.toString() || '0',
-      icon: 'check' as const,
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-500',
-    },
-  ]
+  const completionPercentage = stats?.tasks.total ? Math.round((stats?.tasks.byStatus.completada / stats?.tasks.total) * 100) : 0
+  const inProgressCount = stats?.tasks.byStatus['en progreso'] || 0
+  const pendingCount = stats?.tasks.byStatus.pendiente || 0
 
   return (
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-200">
         <div className="px-8 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Pantalla Principal</h1>
             <p className="text-gray-500 mt-1">
-              {messages.dashboard.welcomeMessage(user?.name || 'Usuario')}
+              Aquí están todos tus proyectos y tareas en un vistazo
             </p>
           </div>
           <DropdownMenu>
@@ -88,7 +45,7 @@ export default function DashboardPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <div className="px-2 py-1.5">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                <p className="text-sm font-medium text-gray-900"> Hola, {user?.name}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
@@ -110,20 +67,99 @@ export default function DashboardPage() {
             <div className="w-8 h-8 border-3 border-green-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              {statCards.map((stat) => (
-                <StatCard key={stat.title} {...stat} />
-              ))}
-            </div>
+          <div className="space-y-8">
+            {/* Resumen de Tareas */}
+            <section>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Tu Progreso</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Gráfico Circular de Progreso */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-32 h-32 mb-4">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="54"
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="8"
+                          strokeDasharray={`${(completionPercentage / 100) * 339.3} 339.3`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-3xl font-bold text-gray-900">{completionPercentage}%</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 text-center">Tareas Completadas</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats?.tasks.byStatus.completada || 0} de {stats?.tasks.total || 0}</p>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <RecentProjects />
+                {/* Estado de Tareas */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-blue-500" />
+                        <span className="text-sm text-gray-600">En Progreso</span>
+                      </div>
+                      <span className="text-2xl font-bold text-blue-600">{inProgressCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-500" />
+                        <span className="text-sm text-gray-600">Por Hacer</span>
+                      </div>
+                      <span className="text-2xl font-bold text-amber-600">{pendingCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <span className="text-sm text-gray-600">Completadas</span>
+                      </div>
+                      <span className="text-2xl font-bold text-green-600">{stats?.tasks.byStatus.completada || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resumen de Proyectos */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Total de Proyectos</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats?.projects.total || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Total de Tareas</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats?.tasks.total || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Asignadas a Ti</p>
+                      <p className="text-3xl font-bold text-green-600">{stats?.tasks.assigned || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          
+
+            {/* Secciones de Proyectos y Actividad */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Tus Proyectos</h2>
+                <RecentProjects />
+              </div>
               {stats?.recentTasks && stats.recentTasks.length > 0 && (
-                <ActivityOverview />
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Actividad Reciente</h2>
+                  <ActivityOverview />
+                </div>
               )}
-            </div>
-          </>
+            </section>
+          </div>
         )}
       </div>
     </div>
