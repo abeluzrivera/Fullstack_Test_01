@@ -5,7 +5,7 @@ import { useTasks, useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useAuthStore } from '@/store/authStore'
 import NewTaskDialog from '@/components/task/NewTaskDialog'
-import { KanbanBoard } from '@/components/task/KanbanBoard'
+import { KanbanBoard } from '../components/task/KanbanBoard'
 import type { Task } from '@/types/api'
 
 export default function ProjectDetailPage() {
