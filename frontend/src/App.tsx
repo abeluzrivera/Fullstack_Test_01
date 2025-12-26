@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import AuthPage from './pages/AuthPage'
 import DashboardPage from './pages/DashboardPage'
 import ProjectsPage from './pages/ProjectsPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
 import TasksPage from './pages/TasksPage'
+import MyTasksPage from './pages/MyTasksPage'
 import SidebarLayout from './components/layout/SidebarLayout'
 import ProtectedRoute from './components/routes/ProtectedRoute'
 import PublicRoute from './components/routes/PublicRoute'
@@ -47,11 +48,31 @@ function App() {
             }
           />
           <Route
+            path="/projects/:projectId"
+            element={
+              <ProtectedRoute>
+                <SidebarLayout>
+                  <ProjectDetailPage />
+                </SidebarLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/tasks"
             element={
               <ProtectedRoute>
                 <SidebarLayout>
                   <TasksPage />
+                </SidebarLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-tasks"
+            element={
+              <ProtectedRoute>
+                <SidebarLayout>
+                  <MyTasksPage />
                 </SidebarLayout>
               </ProtectedRoute>
             }

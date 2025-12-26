@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useProjects } from '@/hooks/useProjects'
 import { useTasks } from '@/hooks/useTasks'
 import NewProjectDialog from '@/components/project/NewProjectDialog'
@@ -10,6 +11,7 @@ interface ProjectCardProps {
 }
 
 function ProjectCardWithTasks({ project }: ProjectCardProps) {
+  const navigate = useNavigate()
   const { data: tasks } = useTasks(project._id)
 
   const totalTasks = tasks?.length || 0
@@ -19,7 +21,10 @@ function ProjectCardWithTasks({ project }: ProjectCardProps) {
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+    <div 
+      onClick={() => navigate(`/projects/${project._id}`)}
+      className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+    >
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         {project.name}
       </h3>

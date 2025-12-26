@@ -1,4 +1,4 @@
-import { LogOut, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
+import { LogOut, CheckCircle2, Clock, AlertCircle, ListTodo } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
 import RecentProjects from '@/components/dashboard/RecentProjects'
@@ -48,6 +48,14 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-900"> Hola, {user?.name}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => navigate('/my-tasks')}
+                className="flex items-center gap-2"
+              >
+                <ListTodo className="w-4 h-4" />
+                Mis Tareas Asignadas
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
@@ -138,7 +146,12 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 mb-1">Asignadas a Ti</p>
-                      <p className="text-3xl font-bold text-green-600">{stats?.tasks.assigned || 0}</p>
+                      <button
+                        onClick={() => navigate('/my-tasks')}
+                        className="text-3xl font-bold text-green-600 hover:text-green-700 transition-colors cursor-pointer"
+                      >
+                        {stats?.tasks.assigned || 0}
+                      </button>
                     </div>
                   </div>
                 </div>

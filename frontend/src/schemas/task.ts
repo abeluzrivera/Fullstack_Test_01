@@ -6,6 +6,7 @@ export const taskSchema = z.object({
   project: z.string().min(1, 'Project is required'),
   priority: z.enum(['baja', 'media', 'alta']),
   status: z.enum(['pendiente', 'en progreso', 'completada']),
+  assignedTo: z.string().optional(),
 })
 
 export type TaskFormData = z.infer<typeof taskSchema>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTasks } from '@/hooks/useTasks'
 import { useDeleteProject } from '@/hooks/useProjects'
 import type { Project, TeamMember } from '@/types/api'
@@ -29,6 +30,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const navigate = useNavigate()
   const { data: tasks } = useTasks(project._id)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [teamDialogOpen, setTeamDialogOpen] = useState(false)
@@ -90,18 +92,76 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <>
-      <div className="bg-white rounded-xl p-6 w-fit shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="text-xl font-semibold text-gray-900">
-              {project.name}
-            </h3>
-            {project.description && (
-              <p className="text-gray-600 text-sm">{project.description}</p>
-            )}
+      <div 
+        className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative w-fit"
+      >
+        {/* Clickable Area */}
+        <div 
+          onClick={() => navigate(`/projects/${project._id}`)}
+          className="p-6 hover:cursor-pointer"
+        >
+          <div className="flex items-start justify-between mb-3 pr-12">
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {project.name}
+              </h3>
+              {project.description && (
+                <p className="text-gray-600 text-sm">{project.description}</p>
+              )}
+            </div>
           </div>
+
+          <div className="flex items-center gap-2 justify-between">
+            <div className="flex items-center space-x-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Tasks</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {completedTasks}/{totalTasks}
+                  </p>
+                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Due Date</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {new Date(project.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Team Members</p>
+              <div className="flex -space-x-2">
+                {teamMembers.slice(0, 4).map((member, index) => (
+                  <div
+                    key={member._id}
+                    className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold ${getAvatarColor(index)}`}
+                    title={member.name}
+                  >
+                    {getInitials(member.name)}
+                  </div>
+                ))}
+                {teamMembers.length > 4 && (
+                  <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold">
+                    +{teamMembers.length - 4}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dropdown Menu (Non-clickable area) */}
+        <div className="absolute top-6 right-6">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <button className="p-1 hover:bg-gray-100 rounded">
                 <MoreVertical className="w-5 h-5 text-gray-400" />
               </button>
@@ -124,52 +184,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        <div className="flex items-center gap-2 justify-betwee">
-          <div className="flex items-center space-x-4">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Tasks</p>
-              <div className="flex items-center space-x-2">
-                <p className="text-sm font-semibold text-gray-900">
-                  {completedTasks}/{totalTasks}
-                </p>
-                <div className="w-24 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Due Date</p>
-              <p className="text-sm font-semibold text-gray-900">
-                {new Date(project.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs text-gray-500 mb-1">Team Members</p>
-            <div className="flex -space-x-2">
-              {teamMembers.slice(0, 4).map((member, index) => (
-                <div
-                  key={member._id}
-                  className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-semibold ${getAvatarColor(index)}`}
-                  title={member.name}
-                >
-                  {getInitials(member.name)}
-                </div>
-              ))}
-              {teamMembers.length > 4 && (
-                <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold">
-                  +{teamMembers.length - 4}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 

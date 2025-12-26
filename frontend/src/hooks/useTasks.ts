@@ -46,10 +46,17 @@ export const useDeleteTask = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => tasksApi.deleteTask(id),
+    mutationFn: (taskId: string) => tasksApi.deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] })
     },
+  })
+}
+
+export const useMyAssignedTasks = () => {
+  return useQuery({
+    queryKey: ['tasks', 'assigned-to-me'],
+    queryFn: () => tasksApi.getTasks(),
   })
 }

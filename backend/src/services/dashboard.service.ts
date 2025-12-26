@@ -17,7 +17,6 @@ class DashboardService {
       await Promise.all([
         Task.countDocuments({
           project: { $in: objectIds },
-          status: { $in: ['pendiente', 'en progreso'] },
         }),
         this.getTasksByStatus(projectIds),
         this.getTasksByPriority(projectIds),

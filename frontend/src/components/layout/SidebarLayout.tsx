@@ -20,7 +20,6 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Projects', path: '/projects', icon: FolderKanban },
-    { name: 'Tasks', path: '/tasks', icon: CheckSquare },
   ]
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
