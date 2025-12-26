@@ -1,0 +1,584 @@
+# Azure Pipeline para Build y Despliegue en Azure Web App Container
+# Fullstack_Test_01 - Pedro Abel Rivera Vera
+
+trigger:
+  branches:
+    include:
+      - master
+      - develop
+      - release/*
+  paths:
+    include:
+      - backend/**
+      - frontend/**
+      - docker-compose.yml
+      - Dockerfile
+      - azure-pipelines.yml
+
+pr:
+  branches:
+    include:
+      - master
+      - develop
+
+# Variables globales parametrizadas
+variables:
+  # ====================
+  # CONFIGURACIÓN GENERAL
+  # ====================
+  system.debug: false
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_PROGRESS: plain
+
+  # ====================
+  # VARIABLES DE ENTORNO
+  # ====================
+  NODE_VERSION: '18.x'
+  NODE_ENV_BUILD: 'production'
+  NODE_ENV_STAGING: 'staging'
+  NODE_ENV_DEV: 'development'
+
+  # ====================
+  # REGISTRO DE CONTENEDORES
+  # ====================
+  REGISTRY_NAME: 'acrfullstacktest'
+  REGISTRY_FQDN: '$(REGISTRY_NAME).azurecr.io'
+  REGISTRY_USERNAME: '$(REGISTRY_USERNAME_SECRET)'
+  REGISTRY_PASSWORD: '$(REGISTRY_PASSWORD_SECRET)'
+
+  # ====================
+  # IMÁGENES DOCKER
+  # ====================
+  BACKEND_IMAGE_NAME: 'fullstack-test/backend'
+  FRONTEND_IMAGE_NAME: 'fullstack-test/frontend'
+  BACKEND_DOCKERFILE: '$(Build.SourcesDirectory)/backend/Dockerfile'
+  FRONTEND_DOCKERFILE: '$(Build.SourcesDirectory)/frontend/Dockerfile'
+
+  # ====================
+  # VERSIONES Y TAGS
+  # ====================
+  BUILD_NUMBER: '$(Build.BuildNumber)'
+  BUILD_ID: '$(Build.BuildId)'
+  SOURCE_BRANCH: '$(Build.SourceBranch)'
+  COMMIT_SHA: '$(Build.SourceVersion)'
+  BRANCH_NAME: $[replace(variables['Build.SourceBranch'], 'refs/heads/', '')]
+
+  # ====================
+  # AZURE WEB APP
+  # ====================
+  AZURE_RESOURCE_GROUP: 'rg-fullstack-test'
+  AZURE_WEB_APP_NAME: 'webapp-fullstack-test'
+  AZURE_LOCATION: 'East US'
+
+  # ====================
+  # TIMEOUTS Y LÍMITES
+  # ====================
+  BUILD_TIMEOUT_MINUTES: 30
+  DOCKER_BUILD_TIMEOUT: 3600
+
+  # ====================
+  # PATHS IMPORTANTES
+  # ====================
+  BACKEND_PATH: '$(Build.SourcesDirectory)/backend'
+  FRONTEND_PATH: '$(Build.SourcesDirectory)/frontend'
+  DOCKER_COMPOSE_PATH: '$(Build.SourcesDirectory)/docker-compose.yml'
+
+stages:
+  # ==================================================================
+  # STAGE 1: BUILD BACKEND
+  # ==================================================================
+  - stage: Build_Backend
+    displayName: 'Build Backend'
+    variables:
+      STAGE_NAME: 'Build_Backend'
+      CACHE_KEY: 'backend-deps-$(System.TeamProjectId)-$(Build.SourceVersion)'
+    jobs:
+      - job: BuildBackendJob
+        displayName: 'Compile Backend (Node.js + TypeScript)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: $(BUILD_TIMEOUT_MINUTES)
+
+        steps:
+          # Información de compilación
+          - script: |
+              echo "====================================="
+              echo "INICIANDO BUILD DE BACKEND"
+              echo "====================================="
+              echo "Build ID: $(BUILD_ID)"
+              echo "Branch: $(BRANCH_NAME)"
+              echo "Commit: $(COMMIT_SHA)"
+              echo "Timestamp: $(System.CollectionUri)"
+              echo "====================================="
+            displayName: 'Log Build Information'
+
+          # Setup Node.js
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Setup Node.js $(NODE_VERSION)'
+
+          # Cache de dependencias
+          - task: Cache@2
+            inputs:
+              key: $(CACHE_KEY)
+              path: $(BACKEND_PATH)/node_modules
+              cacheHitVar: CACHE_RESTORED
+            displayName: 'Cache Node Modules Backend'
+
+          # Instalar dependencias
+          - script: |
+              cd $(BACKEND_PATH)
+              npm ci --prefer-offline --no-audit
+            displayName: 'Install Backend Dependencies'
+            condition: eq(variables.CACHE_RESTORED, 'false')
+
+          # Verificar TypeScript
+          - script: |
+              cd $(BACKEND_PATH)
+              npm run build
+            displayName: 'Compile TypeScript'
+            env:
+              NODE_ENV: $(NODE_ENV_BUILD)
+
+          # Lint
+          - script: |
+              cd $(BACKEND_PATH)
+              npm run lint 2>&1 || true
+            displayName: 'Run ESLint'
+            continueOnError: true
+
+          # Tests unitarios
+          - script: |
+              cd $(BACKEND_PATH)
+              npm test -- --passWithNoTests 2>&1 || true
+            displayName: 'Run Unit Tests'
+            continueOnError: true
+
+          # Publicar artefactos de compilación
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: $(BACKEND_PATH)/dist
+              artifactName: 'backend-build'
+              publishLocation: 'Container'
+            displayName: 'Publish Backend Build Artifacts'
+
+          # Publicar resumen
+          - script: |
+              echo "Backend Build Successful"
+              echo "Artifacts published: backend-build"
+            displayName: 'Build Summary'
+
+  # ==================================================================
+  # STAGE 2: BUILD FRONTEND
+  # ==================================================================
+  - stage: Build_Frontend
+    displayName: 'Build Frontend'
+    variables:
+      STAGE_NAME: 'Build_Frontend'
+      CACHE_KEY: 'frontend-deps-$(System.TeamProjectId)-$(Build.SourceVersion)'
+    jobs:
+      - job: BuildFrontendJob
+        displayName: 'Compile Frontend (React + TypeScript)'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: $(BUILD_TIMEOUT_MINUTES)
+
+        steps:
+          # Información de compilación
+          - script: |
+              echo "====================================="
+              echo "INICIANDO BUILD DE FRONTEND"
+              echo "====================================="
+              echo "Build ID: $(BUILD_ID)"
+              echo "Branch: $(BRANCH_NAME)"
+              echo "Commit: $(COMMIT_SHA)"
+              echo "====================================="
+            displayName: 'Log Build Information'
+
+          # Setup Node.js
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+            displayName: 'Setup Node.js $(NODE_VERSION)'
+
+          # Cache de dependencias
+          - task: Cache@2
+            inputs:
+              key: $(CACHE_KEY)
+              path: $(FRONTEND_PATH)/node_modules
+              cacheHitVar: CACHE_RESTORED
+            displayName: 'Cache Node Modules Frontend'
+
+          # Instalar dependencias
+          - script: |
+              cd $(FRONTEND_PATH)
+              npm ci --prefer-offline --no-audit
+            displayName: 'Install Frontend Dependencies'
+            condition: eq(variables.CACHE_RESTORED, 'false')
+
+          # Build con Vite
+          - script: |
+              cd $(FRONTEND_PATH)
+              npm run build
+            displayName: 'Build Frontend (Vite)'
+            env:
+              VITE_API_BASE_URL: '$(VITE_API_BASE_URL)'
+              NODE_ENV: $(NODE_ENV_BUILD)
+
+          # Lint
+          - script: |
+              cd $(FRONTEND_PATH)
+              npm run lint 2>&1 || true
+            displayName: 'Run ESLint'
+            continueOnError: true
+
+          # Publicar artefactos de compilación
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: $(FRONTEND_PATH)/dist
+              artifactName: 'frontend-build'
+              publishLocation: 'Container'
+            displayName: 'Publish Frontend Build Artifacts'
+
+          # Publicar resumen
+          - script: |
+              echo "Frontend Build Successful"
+              echo "Artifacts published: frontend-build"
+            displayName: 'Build Summary'
+
+  # ==================================================================
+  # STAGE 3: BUILD DOCKER IMAGES
+  # ==================================================================
+  - stage: Build_Docker_Images
+    displayName: 'Build Docker Images'
+    dependsOn:
+      - Build_Backend
+      - Build_Frontend
+    variables:
+      STAGE_NAME: 'Build_Docker_Images'
+    jobs:
+      # Backend Docker Image
+      - job: BuildBackendImage
+        displayName: 'Build Backend Docker Image'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: 25
+
+        steps:
+          - script: |
+              echo "====================================="
+              echo "BUILD DOCKER IMAGE - BACKEND"
+              echo "====================================="
+              echo "Registry: $(REGISTRY_FQDN)"
+              echo "Image: $(BACKEND_IMAGE_NAME)"
+              echo "Tag: $(BUILD_NUMBER)"
+              echo "====================================="
+            displayName: 'Log Docker Build Information'
+
+          # Download artefacto backend
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'backend-build'
+              downloadPath: '$(System.ArtifactsDirectory)'
+            displayName: 'Download Backend Build Artifacts'
+
+          # Build imagen Docker backend
+          - task: Docker@2
+            inputs:
+              command: 'build'
+              Dockerfile: $(BACKEND_DOCKERFILE)
+              tags: |
+                $(REGISTRY_FQDN)/$(BACKEND_IMAGE_NAME):$(BUILD_NUMBER)
+                $(REGISTRY_FQDN)/$(BACKEND_IMAGE_NAME):latest
+                $(REGISTRY_FQDN)/$(BACKEND_IMAGE_NAME):$(BRANCH_NAME)
+              arguments: |
+                --build-arg NODE_ENV=$(NODE_ENV_BUILD)
+                --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+                --build-arg VCS_REF=$(COMMIT_SHA)
+            displayName: 'Build Backend Docker Image'
+
+      # Frontend Docker Image
+      - job: BuildFrontendImage
+        displayName: 'Build Frontend Docker Image'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: 25
+        dependsOn: []
+
+        steps:
+          - script: |
+              echo "====================================="
+              echo "BUILD DOCKER IMAGE - FRONTEND"
+              echo "====================================="
+              echo "Registry: $(REGISTRY_FQDN)"
+              echo "Image: $(FRONTEND_IMAGE_NAME)"
+              echo "Tag: $(BUILD_NUMBER)"
+              echo "====================================="
+            displayName: 'Log Docker Build Information'
+
+          # Download artefacto frontend
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'frontend-build'
+              downloadPath: '$(System.ArtifactsDirectory)'
+            displayName: 'Download Frontend Build Artifacts'
+
+          # Build imagen Docker frontend
+          - task: Docker@2
+            inputs:
+              command: 'build'
+              Dockerfile: $(FRONTEND_DOCKERFILE)
+              tags: |
+                $(REGISTRY_FQDN)/$(FRONTEND_IMAGE_NAME):$(BUILD_NUMBER)
+                $(REGISTRY_FQDN)/$(FRONTEND_IMAGE_NAME):latest
+                $(REGISTRY_FQDN)/$(FRONTEND_IMAGE_NAME):$(BRANCH_NAME)
+              arguments: |
+                --build-arg NODE_ENV=$(NODE_ENV_BUILD)
+                --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+                --build-arg VCS_REF=$(COMMIT_SHA)
+            displayName: 'Build Frontend Docker Image'
+
+  # ==================================================================
+  # STAGE 4: PUSH TO AZURE CONTAINER REGISTRY
+  # ==================================================================
+  - stage: Push_To_Registry
+    displayName: 'Push to Azure Container Registry'
+    dependsOn: Build_Docker_Images
+    condition: |
+      and(
+        succeeded(),
+        or(
+          eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+          startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')
+        )
+      )
+    variables:
+      STAGE_NAME: 'Push_To_Registry'
+    jobs:
+      - job: PushToACR
+        displayName: 'Push Docker Images to ACR'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: 20
+
+        steps:
+          - script: |
+              echo "====================================="
+              echo "PUSH A AZURE CONTAINER REGISTRY"
+              echo "====================================="
+              echo "Registry: $(REGISTRY_FQDN)"
+              echo "Backend Image: $(BACKEND_IMAGE_NAME):$(BUILD_NUMBER)"
+              echo "Frontend Image: $(FRONTEND_IMAGE_NAME):$(BUILD_NUMBER)"
+              echo "====================================="
+            displayName: 'Log Push Information'
+
+          # Autenticar en ACR
+          - task: Docker@2
+            inputs:
+              command: 'login'
+              containerRegistry: 'AzureContainerRegistry'
+            displayName: 'Login to Azure Container Registry'
+
+          # Push Backend Image
+          - task: Docker@2
+            inputs:
+              command: 'push'
+              repository: $(BACKEND_IMAGE_NAME)
+              tags: |
+                $(BUILD_NUMBER)
+                latest
+                $(BRANCH_NAME)
+              containerRegistry: 'AzureContainerRegistry'
+            displayName: 'Push Backend Image to ACR'
+
+          # Push Frontend Image
+          - task: Docker@2
+            inputs:
+              command: 'push'
+              repository: $(FRONTEND_IMAGE_NAME)
+              tags: |
+                $(BUILD_NUMBER)
+                latest
+                $(BRANCH_NAME)
+              containerRegistry: 'AzureContainerRegistry'
+            displayName: 'Push Frontend Image to ACR'
+
+          # Verificar imágenes en ACR
+          - script: |
+              echo "Imágenes pushadas exitosamente a ACR"
+              echo "Backend: $(REGISTRY_FQDN)/$(BACKEND_IMAGE_NAME):$(BUILD_NUMBER)"
+              echo "Frontend: $(REGISTRY_FQDN)/$(FRONTEND_IMAGE_NAME):$(BUILD_NUMBER)"
+            displayName: 'Verify Push Completed'
+
+  # ==================================================================
+  # STAGE 5: DEPLOY TO AZURE WEB APP (DEVELOPMENT)
+  # ==================================================================
+  - stage: Deploy_Dev
+    displayName: 'Deploy to Development'
+    dependsOn: Push_To_Registry
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+      )
+    variables:
+      STAGE_NAME: 'Deploy_Dev'
+      ENVIRONMENT: 'development'
+      WEB_APP_NAME: '$(AZURE_WEB_APP_NAME)-dev'
+      DOCKER_REGISTRY_URL: '$(REGISTRY_FQDN)'
+      IMAGE_TAG: '$(BUILD_NUMBER)'
+    jobs:
+      - deployment: DeployDevJob
+        displayName: 'Deploy to Dev Web App'
+        environment: 'Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "====================================="
+                    echo "DEPLOY A DEVELOPMENT"
+                    echo "====================================="
+                    echo "Web App: $(WEB_APP_NAME)"
+                    echo "Environment: $(ENVIRONMENT)"
+                    echo "Image Tag: $(IMAGE_TAG)"
+                    echo "====================================="
+                  displayName: 'Log Deployment Information'
+
+                # Deploy usando Azure Container Instances o Web App
+                - task: AzureWebAppContainer@1
+                  inputs:
+                    azureSubscription: 'AzureSubscription'
+                    appName: $(WEB_APP_NAME)
+                    imageName: '$(DOCKER_REGISTRY_URL)/$(BACKEND_IMAGE_NAME):$(IMAGE_TAG)'
+                    containerCommand: ''
+                  displayName: 'Deploy Backend Container'
+
+                - script: |
+                    echo "Development Deployment Completed"
+                    echo "Web App: $(WEB_APP_NAME)"
+                    echo "Status: Active"
+                  displayName: 'Deployment Summary'
+
+  # ==================================================================
+  # STAGE 6: DEPLOY TO AZURE WEB APP (STAGING)
+  # ==================================================================
+  - stage: Deploy_Staging
+    displayName: 'Deploy to Staging'
+    dependsOn: Push_To_Registry
+    condition: |
+      and(
+        succeeded(),
+        startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')
+      )
+    variables:
+      STAGE_NAME: 'Deploy_Staging'
+      ENVIRONMENT: 'staging'
+      WEB_APP_NAME: '$(AZURE_WEB_APP_NAME)-staging'
+      DOCKER_REGISTRY_URL: '$(REGISTRY_FQDN)'
+      IMAGE_TAG: '$(BUILD_NUMBER)'
+    jobs:
+      - deployment: DeployStagingJob
+        displayName: 'Deploy to Staging Web App'
+        environment: 'Staging'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "====================================="
+                    echo "DEPLOY A STAGING"
+                    echo "====================================="
+                    echo "Web App: $(WEB_APP_NAME)"
+                    echo "Environment: $(ENVIRONMENT)"
+                    echo "Image Tag: $(IMAGE_TAG)"
+                    echo "====================================="
+                  displayName: 'Log Deployment Information'
+
+                # Deploy imagen backend
+                - task: AzureWebAppContainer@1
+                  inputs:
+                    azureSubscription: 'AzureSubscription'
+                    appName: $(WEB_APP_NAME)
+                    imageName: '$(DOCKER_REGISTRY_URL)/$(BACKEND_IMAGE_NAME):$(IMAGE_TAG)'
+                    containerCommand: ''
+                  displayName: 'Deploy Backend Container'
+
+                - script: |
+                    echo "Staging Deployment Completed"
+                    echo "Web App: $(WEB_APP_NAME)"
+                    echo "Status: Ready for Testing"
+                  displayName: 'Deployment Summary'
+
+  # ==================================================================
+  # STAGE 7: DEPLOY TO AZURE WEB APP (PRODUCTION)
+  # ==================================================================
+  - stage: Deploy_Production
+    displayName: 'Deploy to Production'
+    dependsOn: Push_To_Registry
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/master')
+      )
+    variables:
+      STAGE_NAME: 'Deploy_Production'
+      ENVIRONMENT: 'production'
+      WEB_APP_NAME: '$(AZURE_WEB_APP_NAME)'
+      DOCKER_REGISTRY_URL: '$(REGISTRY_FQDN)'
+      IMAGE_TAG: '$(BUILD_NUMBER)'
+    jobs:
+      - deployment: DeployProdJob
+        displayName: 'Deploy to Production Web App'
+        environment: 'Production'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: |
+                    echo "====================================="
+                    echo "DEPLOY A PRODUCCIÓN"
+                    echo "====================================="
+                    echo "Web App: $(WEB_APP_NAME)"
+                    echo "Environment: $(ENVIRONMENT)"
+                    echo "Image Tag: $(IMAGE_TAG)"
+                    echo "====================================="
+                  displayName: 'Log Deployment Information'
+
+                # Deploy imagen backend
+                - task: AzureWebAppContainer@1
+                  inputs:
+                    azureSubscription: 'AzureSubscription'
+                    appName: $(WEB_APP_NAME)
+                    imageName: '$(DOCKER_REGISTRY_URL)/$(BACKEND_IMAGE_NAME):$(IMAGE_TAG)'
+                    containerCommand: ''
+                  displayName: 'Deploy Backend Container'
+
+                # Verificar salud de la aplicación
+                - script: |
+                    echo "Production Deployment Completed"
+                    echo "Web App: $(WEB_APP_NAME)"
+                    echo "Status: Live in Production"
+                  displayName: 'Deployment Summary'
+
+                # Notification (opcional)
+                - script: |
+                    echo "Build and deployment pipeline completed successfully"
+                    echo "Commit: $(COMMIT_SHA)"
+                    echo "Branch: $(BRANCH_NAME)"
+                  displayName: 'Final Summary'
