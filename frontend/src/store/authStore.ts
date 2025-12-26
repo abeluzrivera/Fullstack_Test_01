@@ -5,10 +5,8 @@ import type { User } from '@/types/api'
 interface AuthState {
   user: User | null
   token: string | null
-  isEntraAuthenticated: boolean
   setAuth: (user: User, token: string) => void
   setUser: (user: User) => void
-  setEntraAuth: (user: User, token: string) => void
   logout: () => void
   clearToken: () => void
 }
@@ -18,18 +16,14 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
-      isEntraAuthenticated: false,
       setAuth: (user, token) => {
-        set({ user, token, isEntraAuthenticated: false })
+        set({ user, token })
       },
       setUser: (user) => {
         set({ user })
       },
-      setEntraAuth: (user, token) => {
-        set({ user, token, isEntraAuthenticated: true })
-      },
       logout: () => {
-        set({ user: null, token: null, isEntraAuthenticated: false })
+        set({ user: null, token: null })
       },
       clearToken: () => {
         set({ token: null })
@@ -57,6 +51,6 @@ export const useAuthStore = create<AuthState>()(
 )
 
 export const useIsAuthenticated = () => {
-  const { token, isEntraAuthenticated } = useAuthStore()
-  return !!token && isEntraAuthenticated
+  const { token } = useAuthStore()
+  return !!token
 }

@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
-import { MsalProvider } from '@azure/msal-react'
-import { getMsalInstance } from '@/lib/msalConfig'
 import AuthPage from './pages/AuthPage'
 import DashboardPage from './pages/DashboardPage'
 import ProjectsPage from './pages/ProjectsPage'
@@ -12,13 +10,10 @@ import ProtectedRoute from './components/routes/ProtectedRoute'
 import PublicRoute from './components/routes/PublicRoute'
 
 const queryClient = new QueryClient()
-const msalInstance = getMsalInstance()
-
 function App() {
   return (
-    <MsalProvider instance={msalInstance}>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
           <Routes>
             <Route
               path="/login"
@@ -67,7 +62,6 @@ function App() {
         </BrowserRouter>
         <Toaster position="top-right" richColors />
       </QueryClientProvider>
-    </MsalProvider>
   )
 }
 

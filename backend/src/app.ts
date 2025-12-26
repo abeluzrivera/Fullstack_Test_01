@@ -15,9 +15,24 @@ import { authLimiter, apiLimiter } from './middleware/rateLimiter'
 const app: Application = express()
 
 app.use(helmet())
+
+// CORS configuration - allow multiple origins for development
+const allowedOrigins = [
+  process.env.CORS_ORIGIN || 'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:7898',
+]
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:7898',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('CORS not allowed'))
+      }
+    },
     credentials: true,
   }),
 )

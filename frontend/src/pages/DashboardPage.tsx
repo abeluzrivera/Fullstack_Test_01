@@ -1,12 +1,10 @@
-import { useState } from 'react'
-import { Settings as SettingsIcon, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from 'react-router-dom'
 import StatCard, { type StatCardProps } from '@/components/dashboard/StatCard'
 import RecentProjects from '@/components/dashboard/RecentProjects'
 import ActivityOverview from '@/components/dashboard/ActivityOverview'
 import { useDashboardStats } from '@/hooks/useDashboard'
-import UserSettingsDialog from '@/components/user/UserSettingsDialog'
 import { messages } from '@/config/messages'
 import {
   DropdownMenu,
@@ -21,7 +19,6 @@ export default function DashboardPage() {
   const logout = useAuthStore((state) => state.logout)
   const navigate = useNavigate()
   const { data: stats, isLoading } = useDashboardStats()
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -74,73 +71,61 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="px-8 py-4 flex items-center justify-between pl-16 lg:pl-8">
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-gray-200">
+        <div className="px-8 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{messages.dashboard.welcomeTitle}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-500 mt-1">
-              {messages.dashboard.welcomeMessage(user?.name)}
+              {messages.dashboard.welcomeMessage(user?.name || 'Usuario')}
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold hover:bg-blue-700 transition-colors cursor-pointer">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.name}
-                  </p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                  <SettingsIcon className="w-4 h-4 mr-2" />
-                  {messages.header.settings}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-600"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {messages.header.logout}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-semibold hover:bg-green-700 transition-colors">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-600"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
-      <div className="px-8 py-6">
+      <div className="px-8 py-8">
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-3 border-green-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {statCards.map((stat) => (
                 <StatCard key={stat.title} {...stat} />
               ))}
             </div>
 
-            <RecentProjects />
-
-            {stats?.recentTasks && stats.recentTasks.length > 0 && (
-              <ActivityOverview />
-            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <RecentProjects />
+              {stats?.recentTasks && stats.recentTasks.length > 0 && (
+                <ActivityOverview />
+              )}
+            </div>
           </>
         )}
       </div>
-
-      <UserSettingsDialog
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
     </div>
   )
 }
