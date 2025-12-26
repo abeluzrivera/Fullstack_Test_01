@@ -4,8 +4,9 @@ import {
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
-  X,
   Menu,
+  X,
+  ChevronLeft,
 } from 'lucide-react'
 
 interface SidebarLayoutProps {
@@ -14,8 +15,7 @@ interface SidebarLayoutProps {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const location = useLocation()
-
-  const [open, setOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -23,70 +23,122 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     { name: 'Tasks', path: '/tasks', icon: CheckSquare },
   ]
 
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed top-4 left-4 z-40 lg:hidden p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
+    <div className="flex h-screen w-screen overflow-hidden">
+      {/* Sidebar */}
+      <aside
+        className={`sidebar-container transition-all duration-300 overflow-hidden ${
+          sidebarOpen ? 'w-56' : 'w-20'
+        } flex flex-col flex-shrink-0`}
+      >
+        {/* Header con Logo y Toggle */}
+        <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+          <div className={`flex items-center space-x-2 transition-all duration-300 ${!sidebarOpen ? 'justify-center w-full' : ''}`}>
+            <div className="sidebar-logo w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+              <CheckSquare className="w-5 h-5" />
+            </div>
+            {sidebarOpen && <span className="text-lg font-semibold whitespace-nowrap">Project Manager</span>}
+          </div>
+          <button
+            onClick={toggleSidebar}
+            className="sidebar-nav-item p-1.5 rounded-lg transition-colors flex-shrink-0 ml-2"
+            title={sidebarOpen ? 'Cerrar' : 'Abrir'}
+          >
+            <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ${!sidebarOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = location.pathname === item.path
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`sidebar-nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg mb-1 justify-start lg:justify-start ${
+                  isActive ? 'active' : ''
+                }`}
+                title={!sidebarOpen ? item.name : ''}
+              >
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                {sidebarOpen && <span className="text-base whitespace-nowrap">{item.name}</span>}
+              </Link>
+            )
+          })}
+        </nav>
+      </aside>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
+      {/* Mobile Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen bg-gray-900 text-white transition-transform duration-300 z-30 w-64 lg:translate-x-0 flex flex-col ${
-          open ? 'translate-x-0' : '-translate-x-full'
+        className={`sidebar-container fixed inset-y-0 left-0 z-40 w-56 flex flex-col transition-transform lg:hidden ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-4 flex items-center justify-between">
+        {/* Logo */}
+        <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <CheckSquare className="w-5 h-5 text-white" />
+            <div className="sidebar-logo w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+              <CheckSquare className="w-5 h-5" />
             </div>
             <span className="text-lg font-semibold">Project Manager</span>
           </div>
           <button
-            onClick={() => setOpen(false)}
-            className="lg:hidden p-1 hover:bg-gray-800 rounded"
+            onClick={() => setSidebarOpen(false)}
+            className="p-1 hover:bg-sidebar-accent/20 rounded transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <nav className="px-3 py-4 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setOpen(false)}
-                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-gray-800 text-white'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = location.pathname === item.path
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={`sidebar-nav-item flex items-center space-x-3 px-3 py-2.5 rounded-lg mb-1 ${
+                  isActive ? 'active' : ''
+                }`}
+              >
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-base">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
       </aside>
 
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header Mobile */}
+        <header className="bg-white border-b border-border h-14 flex items-center px-4 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </header>
 
-      <main className="flex-1 overflow-y-auto lg:ml-32">{children}</main>
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
     </div>
   )
 }

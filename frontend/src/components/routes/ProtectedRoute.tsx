@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom'
 import { useIsAuthenticated } from '@/store/authStore'
-import SidebarLayout from '@/components/layout/SidebarLayout'
 import { type ReactNode } from 'react'
 
 interface ProtectedRouteProps {
@@ -14,5 +13,5 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />
   }
 
-  return <SidebarLayout>{children}</SidebarLayout>
+  return <>{children}</>
 }
