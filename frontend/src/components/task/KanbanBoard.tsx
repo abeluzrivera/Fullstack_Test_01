@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock, AlertCircle } from 'lucide-react'
-import type { Task } from '@/types/api'
+import type { Task, Project } from '@/types/api'
 import { TaskCard } from './TaskCard'
 import { useState } from 'react'
 import { useReorderTask } from '@/hooks/useTasks'
@@ -14,6 +14,7 @@ interface KanbanBoardProps {
   onDragStart: (task: Task) => void
   onDropOnColumn: (status: string) => Promise<void>
   draggedTask: Task | null
+  project: Project
 }
 
 export function KanbanBoard({
@@ -21,6 +22,7 @@ export function KanbanBoard({
   onDragStart,
   onDropOnColumn,
   draggedTask,
+  project,
 }: KanbanBoardProps) {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
   const [isDropping, setIsDropping] = useState(false)
@@ -159,7 +161,7 @@ export function KanbanBoard({
                     }}
                     className="cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity"
                   >
-                    <TaskCard task={task} />
+                    <TaskCard task={task} project={project} />
                   </div>
                 ))
               )}

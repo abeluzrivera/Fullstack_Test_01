@@ -10,8 +10,8 @@
 
 - **Nombre del Candidato**: Pedro Abel Rivera Vera
 - **Fecha de Inicio**: 23/12/2025
-- **Fecha de Entrega**: 25/12/2025
-- **Tiempo Dedicado**: 33 horas
+- **Fecha de Entrega**: 26/12/2025
+- **Tiempo Dedicado**: 38+ horas (incluye gestión de equipo y asignación)
 
 ---
 
@@ -226,16 +226,21 @@ El modelo de usuario soporta autenticación tanto local como federated mediante 
   assignedTo: ObjectId (ref: User, indexed, opcional),
   status: Enum ['pendiente', 'en progreso', 'completada'] (indexed),
   priority: Enum ['baja', 'media', 'alta'],
+  order: Number (para ordenamiento dentro de columna),
   createdAt: Date (timestamp),
   updatedAt: Date (timestamp)
 }
 ```
 
-Las tareas incluyen validaciones de longitud y enumeraciones para estados y prioridades. El campo assignedTo es opcional para soportar tareas sin asignar. Se implementó auto-asignación cuando un usuario cambia el estado de una tarea sin tener asignado.
+Las tareas incluyen validaciones de longitud y enumeraciones para estados y prioridades. El campo assignedTo es opcional para soportar tareas sin asignar. Se implementó auto-asignación cuando un usuario cambia el estado de una tarea sin tener asignado. El campo `order` permite persistencia de ordenamiento personalizado dentro de cada columna de estado.
 
 **Decisiones importantes:**
 
 Se utilizaron índices en campos frecuentemente consultados como email de usuarios, propietarios de proyectos, estado y prioridad de tareas para acelerar búsquedas. Las relaciones se mantienen normalizadas mediante referencias de ObjectId, permitiendo population automático de datos relacionados. Enums se implementan tanto a nivel de esquema como en TypeScript para validación en múltiples capas. Los documentos contienen sus campos esenciales sin duplicación excesiva, aunque se desnormalizan mínimamente para datos muy consultados como nombres de proyectos en tareas para evitar múltiples poblaciones.
+
+**Validación de Asignación a Tareas:**
+
+Se agregó una capa adicional de validación que asegura que únicamente usuarios que son miembros del proyecto (owner o collaborators) puedan ser asignados a las tareas del proyecto. Esta validación ocurre tanto en el frontend (prevención mediante filtrado de UI) como en el backend (protección mediante validación en el servicio). Si se intenta asignar un usuario que no es miembro, el backend rechaza con status 403 Forbidden y mensaje: "Can only assign tasks to project members".
 
 ---
 
@@ -343,6 +348,45 @@ Se implementó lógica condicional en el handler de cambio de estado que verific
 
 Se aprendió que pequeñas automatizaciones pueden mejorar flujos de trabajo significativamente sin requerir intervención manual del usuario.
 
+### Desafío 4: Validación de Membresía para Asignación de Tareas (NUEVO)
+
+**Problema**: Se necesitaba asegurar que únicamente usuarios que son miembros del proyecto pudieran ser asignados a tareas, y mostrar un mensaje de error claro si se intentaba asignar un no-miembro.
+
+**Solución Implementada**:
+
+1. **Frontend (Prevención)**:
+   - Se filtra la lista de usuarios disponibles en AssignUserDialog usando `projectTeam` prop
+   - Se construye `projectTeam` en TaskCard combinando owner + collaborators del proyecto
+   - Se pasa `project` como prop a través de la cadena: ProjectDetailPage → KanbanBoard → TaskCard
+   - Se muestra alerta si no hay miembros en el equipo
+
+2. **Backend (Protección)**:
+   - Se validó en `task.service.updateTask()` que el usuario asignado sea miembro
+   - Se comparó ObjectIds de forma segura usando `.toString()`
+   - Se lanza error "Can only assign tasks to project members" si la validación falla
+   - Se retorna status 403 Forbidden con error específico
+
+3. **Frontend (Error Handling)**:
+   - Se mejoró `handleAssigneeChange` en TaskCard para detectar el error específico
+   - Se muestra toast con mensaje: "⚠️ Usuario no es miembro del proyecto - Agrega al equipo primero"
+
+**Trade-offs Considerados**:
+
+- **Opción 1**: Validación solo en frontend
+  - Pro: UX mejorada, previene requests inútiles
+  - Contra: Inseguro, puede ser bypassado
+
+- **Opción 2**: Validación solo en backend
+  - Pro: Seguro
+  - Contra: UX pobre, usuarios ven errores sin comprenderlos
+
+- **Opción 3**: Validación en ambas capas (implementado) ✅
+  - Pro: UX mejorada + seguridad garantizada
+  - Contra: Código duplicado en cierta medida
+  - **Decisión**: Los beneficios superan el costo
+
+**Aprendizaje**: La validación en dos capas es esencial en aplicaciones web modernas. El frontend debe proporcionar validación para UX, pero el backend siempre debe validar por seguridad.
+
 ---
 
 ## 🎯 Trade-offs
@@ -401,7 +445,21 @@ Si tuviera más tiempo, implementaría:
    Beneficio: Control fino sobre qué pueden ver y modificar los colaboradores.
    Tiempo estimado: 5-7 horas
 
----
+7. Restricción de Asignación Avanzada (MEJORA A FEATURE ACTUAL)
+   Descripción: Permitir que el propietario del proyecto defina quiénes pueden asignar tareas. Actualmente, cualquier miembro puede asignar. Se podría agregar un campo "canAssignTasks" en el modelo de colaborador.
+   Beneficio: Control granular sobre quién puede realizar qué acciones dentro del proyecto.
+   Código de referencia:
+   ```typescript
+   // En Project.collaborators
+   {
+     userId: ObjectId,
+     role: Enum ['editor', 'reviewer', 'viewer'],
+     canAssignTasks: Boolean,
+     canCreateTasks: Boolean,
+     canDeleteTasks: Boolean
+   }
+   ```
+   Tiempo estimado: 3-4 horas
 
 ## 🚀 Decisiones Clave
 
@@ -419,7 +477,47 @@ Si tuviera más tiempo, implementaría:
 - **Decisión**: MongoDB con Mongoose.
 - **Razón**: Flexibilidad de schema y facilidad de integración con Node.js.
 - **Alternativas Consideradas**: PostgreSQL (descartado por requerir migraciones más complejas).
+### 4. **Gestión de Equipo de Proyecto** (NUEVO)
+- **Decisión**: Implementar validación en dos capas (frontend + backend) para asignación de usuarios.
+- **Razón**: 
+  - **Frontend**: Filtra usuarios por membresía del proyecto para mejorar UX y prevenir errores
+  - **Backend**: Valida membresía para protección contra requests maliciosos
+- **Componente Nuevo**: ManageTeam.tsx modal para visualizar, agregar y remover colaboradores
+- **Flujo de Datos**: ProjectDetailPage → KanbanBoard → TaskCard → AssignUserDialog con projectTeam prop
 
+**Justificación Técnica:**
+
+Se eligió pasar el `project` como prop a través de la cadena de componentes (ProjectDetailPage → KanbanBoard → TaskCard) en lugar de usar Context API porque:
+1. El número de niveles de profundidad es manejable (3 niveles)
+2. Proporciona tipado explícito de TypeScript
+3. Evita overhead de Context API para una aplicación de tamaño medio
+4. Facilita testing de componentes en aislamiento
+
+**Validación en Dos Capas:**
+
+El frontend filtra usuarios mediante:
+```typescript
+const availableUsers = users.filter(u => 
+  projectUserIds.includes(u._id)
+)
+```
+
+El backend valida mediante:
+```typescript
+const canAssign = 
+  data.assignedTo.toString() === userId.toString() ||
+  project.owner.toString() === data.assignedTo.toString() ||
+  project.collaborators.some(c => c.toString() === data.assignedTo.toString())
+```
+
+Se comparan ObjectIds con `.toString()` por seguridad, evitando problemas de comparación de referencias en MongoDB.
+
+**Componentes Implementados:**
+
+- **ManageTeam.tsx**: Modal para gestionar equipo (agregar/remover colaboradores)
+- **AssignUserDialog.tsx**: Diálogo mejorado que filtra por projectTeam
+- **TaskCard.tsx**: Construye projectTeam a partir de owner + collaborators
+- **task.controller.ts**: Mejorado error handling para errores de membresía
 ---
 
 ## 📚 Recursos Consultados
@@ -445,13 +543,19 @@ Lista de recursos que consultaste durante el desarrollo:
 
 La implementación del sistema de Kanban con drag-and-drop funcionó de forma fluida desde el inicio una vez resuelta la estructura de datos. El uso de TypeScript en ambos extremos de la aplicación previno errores de tipo y facilitó refactoring seguro. La separación clara entre services y controllers en el backend permitió lógica reutilizable y testeable. TailwindCSS aceleró significativamente el desarrollo de UI sin escribir CSS personalizado.
 
+La **gestión de equipo y asignación restringida** se implementó de forma limpia mediante validación en dos capas. El filtrado en el frontend proporciona UX clara, mientras que la validación en el backend asegura seguridad. La propuesta de pasar `project` como prop a través de componentes fue simple y mantenible.
+
 ### ¿Qué mejorarías?
 
 Con más experiencia, habría planeado arquitectura de estado global con más detalle antes de implementar. Habría incluido tests automatizados desde el inicio en lugar de relegarlos al final. La documentación se escribió al final, cuando habría sido más útil documentar mientras se desarrollaba. Habría priorizado mejor el tiempo entre features, dedicando más a testing y menos a pulir UI secundarios.
 
+Para la **gestión de equipo**, habría considerado usar Context API para evitar prop drilling si el árbol de componentes fuera más profundo. Sin embargo, para el caso actual (3 niveles), el prop passing fue la solución correcta.
+
 ### ¿Qué aprendiste?
 
 Se adquirieron skills en full-stack development con TypeScript, mejorando el dominio de React hooks personalizados y state management. Se aprendió a integrar autenticación de terceros como Entra ID de forma segura, aunque la implementación completa se dejará para futuro. La experiencia con drag-and-drop y optimistic UI mejoró comprensión de patrones de UX moderno. Se fortaleció el entendimiento de modelos de datos en MongoDB y cuándo desnormalizar en favor de rendimiento. Se aprendió la importancia de auto-asignación y coherencia optimista en aplicaciones colaborativas para mejorar experiencia de usuario.
+
+Se aprendió que **la validación en dos capas (frontend + backend) es esencial** para lograr simultaneamente UX amigable y seguridad robusta. El filtrado en el frontend mejora experiencia previniendo acciones inválidas, pero el backend debe validar por protección contra requests maliciosos. Se fortaleció comprensión de comparación segura de ObjectIds en MongoDB usando `.toString()`. Se experimentó con prop passing vs Context API, confirmando que para árboles de componentes medianos, props explícitos ofrecen mejor trackedabilidad de datos.
 
 ---
 
@@ -481,4 +585,14 @@ Se proporcionan capturas de pantalla de las principales vistas de la aplicación
 
 ---
 
-**Fecha de última actualización**: 25/12/2025
+---
+
+**Fecha de última actualización**: 26/12/2025
+
+**Cambios en esta versión**:
+- Agregado campo `order` al modelo Task para persistencia de ordenamiento
+- Implementado sistema de gestión de equipo (ManageTeam component)
+- Agregada validación de membresía para asignación de tareas
+- Mejorado error handling en task.controller.ts
+- Documentadas decisiones técnicas sobre validación en dos capas
+- Actualizado tiempo total dedicado a proyecto

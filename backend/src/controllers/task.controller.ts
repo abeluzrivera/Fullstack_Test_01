@@ -200,17 +200,17 @@ export const updateTask = async (
       data: task,
     })
   } catch (error: unknown) {
-    res
-      .status(
-        error instanceof Error && error.message === 'Task not found'
-          ? 404
-          : 403,
-      )
-      .json({
-        success: false,
-        message:
-          error instanceof Error ? error.message : 'Failed to update task',
-      })
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update task'
+    const statusCode =
+      errorMessage === 'Task not found'
+        ? 404
+        : errorMessage.includes('Can only assign tasks to project members')
+          ? 403
+          : 403
+    res.status(statusCode).json({
+      success: false,
+      message: errorMessage,
+    })
   }
 }
 

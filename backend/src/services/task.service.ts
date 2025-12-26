@@ -151,9 +151,9 @@ class TaskService {
       }
 
       const canAssign =
-        data.assignedTo === userId ||
-        project.owner.toString() === data.assignedTo ||
-        project.collaborators.some((c) => c.toString() === data.assignedTo)
+        data.assignedTo.toString() === userId.toString() ||
+        project.owner.toString() === data.assignedTo.toString() ||
+        project.collaborators.some((c) => c.toString() === data.assignedTo.toString())
 
       if (!canAssign) {
         throw new Error('Can only assign tasks to project members')

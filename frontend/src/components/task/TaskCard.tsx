@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Task } from '@/types/api'
+import type { Task, Project } from '@/types/api'
 import { useUpdateTask, useDeleteTask } from '@/hooks/useTasks'
 import { useAuthStore } from '@/store/authStore'
 import {
@@ -17,16 +17,19 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { MoreVertical, AlertCircle, Clock, CheckCircle2, Trash2, Zap } from 'lucide-react'
+import { MoreVertical, AlertCircle, Clock, CheckCircle2, Trash2, Zap, Users } from 'lucide-react'
 import { toast } from 'sonner'
+import { AssignUserDialog } from './AssignUserDialog'
 
 interface TaskCardProps {
   task: Task
+  project: Project
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, project }: TaskCardProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [assignUserDialogOpen, setAssignUserDialogOpen] = useState(false)
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const user = useAuthStore((state) => state.user)
@@ -107,9 +110,15 @@ export function TaskCard({ task }: TaskCardProps) {
         data: { assignedTo: assigneeId },
       })
       toast.success('Responsable actualizado')
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || 'Error al actualizar el responsable'
+      // Mostrar mensaje de error específico del backend
+      if (errorMessage.includes('Can only assign tasks to project members')) {
+        toast.error('⚠️ Usuario no es miembro del proyecto - Agrega al equipo primero')
+      } else {
+        toast.error(errorMessage)
+      }
       console.error('Failed to update assignee:', error)
-      toast.error('Error al actualizar el responsable')
     } finally {
       setIsUpdating(false)
     }
@@ -199,7 +208,11 @@ export function TaskCard({ task }: TaskCardProps) {
             <div className="px-2 py-1.5 text-xs font-semibold text-gray-700">
               Responsable
             </div>
-            <DropdownMenuItem onClick={() => handleAssigneeChange(null)} className="flex items-center gap-2">
+            <DropdownMenuItem onClick={() => setAssignUserDialogOpen(true)} className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Asignar Usuario
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAssigneeChange(null)} className="flex items-center gap-2 text-gray-600">
               Sin Asignar
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -248,6 +261,31 @@ export function TaskCard({ task }: TaskCardProps) {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AssignUserDialog
+        open={assignUserDialogOpen}
+        onOpenChange={setAssignUserDialogOpen}
+        onAssign={handleAssigneeChange}
+        currentAssignee={
+          typeof task.assignedTo === 'object' ? task.assignedTo._id : task.assignedTo
+        }
+        projectTeam={[
+          {
+            _id: project.owner._id,
+            name: project.owner.name,
+            email: project.owner.email,
+            createdAt: project.owner.createdAt,
+            updatedAt: project.owner.updatedAt,
+          },
+          ...project.collaborators.map((c) => ({
+            _id: c._id,
+            name: c.name,
+            email: c.email,
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+          })),
+        ]}
+      />
     </div>
   )
 }

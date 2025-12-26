@@ -1,11 +1,12 @@
 import { Router } from 'express'
-import { searchUserByEmail } from '../controllers/user.controller'
+import { getAllUsers, searchUserByEmail, createUser } from '../controllers/user.controller'
 import { authenticate } from '../middleware/auth'
 
 const router = Router()
 
 router.use(authenticate)
 
-router.get('/search', searchUserByEmail)
+router.get('/', getAllUsers)
+router.post('/', createUser)
 
 export default router

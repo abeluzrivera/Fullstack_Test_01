@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Plus, Users } from 'lucide-react'
 import { useTasks, useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useAuthStore } from '@/store/authStore'
 import NewTaskDialog from '@/components/task/NewTaskDialog'
 import { KanbanBoard } from '../components/task/KanbanBoard'
 import { TaskFilters } from '../components/task/TaskFilters'
+import { ManageTeam } from '@/components/project/ManageTeam'
 import type { Task } from '@/types/api'
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [manageTeamOpen, setManageTeamOpen] = useState(false)
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [filters, setFilters] = useState<{
     status?: 'pendiente' | 'en progreso' | 'completada'
@@ -95,13 +97,22 @@ export default function ProjectDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
               <p className="text-gray-500 mt-1">{project.description}</p>
             </div>
-            <button
-              onClick={() => setDialogOpen(true)}
-              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span>New Task</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setManageTeamOpen(true)}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                <span>Manage Team</span>
+              </button>
+              <button
+                onClick={() => setDialogOpen(true)}
+                className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                <span>New Task</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -128,6 +139,7 @@ export default function ProjectDetailPage() {
             onDragStart={handleDragStart}
             onDropOnColumn={handleDropOnColumn}
             draggedTask={draggedTask}
+            project={project!}
           />
         )}
       </div>
@@ -137,6 +149,13 @@ export default function ProjectDetailPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         projectId={projectId || ''}
+      />
+
+      {/* Manage Team Modal */}
+      <ManageTeam
+        project={project}
+        open={manageTeamOpen}
+        onOpenChange={setManageTeamOpen}
       />
     </div>
   )
