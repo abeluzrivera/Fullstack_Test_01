@@ -29,6 +29,7 @@ export function TaskCard({ task }: TaskCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
+  const user = useAuthStore((state) => state.user)
 
   const getInitials = (name: string) => {
     return name
@@ -55,8 +56,13 @@ export function TaskCard({ task }: TaskCardProps) {
   const handleStatusChange = async (
     newStatus: 'pendiente' | 'en progreso' | 'completada',
   ) => {
-    const user = useAuthStore.getState().user
     setIsUpdating(true)
+    if (!task || !task._id) {
+      console.error('El objeto task no es válido o no contiene _id:', task)
+      toast.error('No se puede actualizar el estado porque la tarea no es válida.')
+      setIsUpdating(false)
+      return
+    }
     try {
       const updateData: any = { status: newStatus }
       if (!task.assignedTo && user) {
@@ -142,18 +148,12 @@ export function TaskCard({ task }: TaskCardProps) {
           >
             {task.title}
           </h4>
-          {task.assignedTo && (
+          {task.assignedTo && typeof task.assignedTo === 'object' && (
             <div
               className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 cursor-help"
-              title={
-                typeof task.assignedTo === 'string'
-                  ? task.assignedTo
-                  : task.assignedTo.name
-              }
+              title={task.assignedTo.name || 'Sin nombre'}
             >
-              {typeof task.assignedTo === 'string'
-                ? 'U'
-                : getInitials(task.assignedTo.name)}
+              {getInitials(task.assignedTo.name || '')}
             </div>
           )}
         </div>

@@ -266,3 +266,77 @@ export const deleteTask = async (
       })
   }
 }
+
+/**
+ * @swagger
+ * /api/tasks/{id}/reorder:
+ *   patch:
+ *     summary: Reorder task within a status
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *               order:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Task reordered successfully
+ *       403:
+ *         description: Access denied
+ */
+export const reorderTask = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user!._id
+    const { status, order } = req.body
+
+    if (!status || typeof order !== 'number') {
+      res.status(400).json({
+        success: false,
+        message: 'Status and order are required',
+      })
+      return
+    }
+
+    const task = await taskService.reorderTasks(
+      req.params.id,
+      userId,
+      status,
+      order,
+    )
+
+    res.status(200).json({
+      success: true,
+      message: 'Task reordered successfully',
+      data: task,
+    })
+  } catch (error: unknown) {
+    res
+      .status(
+        error instanceof Error && error.message === 'Task not found'
+          ? 404
+          : 403,
+      )
+      .json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : 'Failed to reorder task',
+      })
+  }
+}

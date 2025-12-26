@@ -6,6 +6,7 @@ import { useProjects } from '@/hooks/useProjects'
 import { useAuthStore } from '@/store/authStore'
 import NewTaskDialog from '@/components/task/NewTaskDialog'
 import { KanbanBoard } from '../components/task/KanbanBoard'
+import { TaskFilters } from '../components/task/TaskFilters'
 import type { Task } from '@/types/api'
 
 export default function ProjectDetailPage() {
@@ -13,6 +14,10 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+  const [filters, setFilters] = useState<{
+    status?: 'pendiente' | 'en progreso' | 'completada'
+    priority?: 'baja' | 'media' | 'alta'
+  }>({})
 
   const { data: projects } = useProjects(1, 100)
   const { data: tasks, isLoading } = useTasks(projectId)
@@ -41,10 +46,6 @@ export default function ProjectDetailPage() {
     setDraggedTask(task)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
   const handleDropOnColumn = async (status: string) => {
     if (!draggedTask) return
 
@@ -64,10 +65,17 @@ export default function ProjectDetailPage() {
     }
   }
 
+  // Aplicar filtros a las tareas
+  const filteredTasks = (tasks || []).filter((task) => {
+    if (filters.status && task.status !== filters.status) return false
+    if (filters.priority && task.priority !== filters.priority) return false
+    return true
+  })
+
   const tasksByStatus = {
-    pendiente: tasks?.filter((t) => t.status === 'pendiente') || [],
-    'en progreso': tasks?.filter((t) => t.status === 'en progreso') || [],
-    completada: tasks?.filter((t) => t.status === 'completada') || [],
+    pendiente: filteredTasks.filter((t) => t.status === 'pendiente') || [],
+    'en progreso': filteredTasks.filter((t) => t.status === 'en progreso') || [],
+    completada: filteredTasks.filter((t) => t.status === 'completada') || [],
   }
 
   return (
@@ -97,6 +105,16 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Filters */}
+      {!isLoading && (
+        <TaskFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          tasks={filteredTasks}
+          projects={projects ? [project] : []}
+        />
+      )}
 
       {/* Kanban Board */}
       <div className="p-8">

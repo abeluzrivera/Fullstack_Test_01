@@ -60,3 +60,15 @@ export const useMyAssignedTasks = () => {
     queryFn: () => tasksApi.getTasks(),
   })
 }
+export const useReorderTask = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, status, order }: { id: string; status: string; order: number }) =>
+      tasksApi.reorderTask(id, status, order),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] })
+    },
+  })
+}

@@ -19,6 +19,7 @@ export interface ITask extends Document {
   assignedTo?: mongoose.Types.ObjectId
   status: TaskStatus
   priority: TaskPriority
+  order: number
   createdAt: Date
   updatedAt: Date
 }
@@ -60,13 +61,18 @@ const taskSchema = new Schema<ITask>(
       default: TaskPriority.MEDIA,
       index: true,
     },
+    order: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
   },
   {
     timestamps: true,
   },
 )
 
-taskSchema.index({ project: 1, status: 1 })
+taskSchema.index({ project: 1, status: 1, order: 1 })
 taskSchema.index({ project: 1, priority: 1 })
 taskSchema.index({ assignedTo: 1, status: 1 })
 taskSchema.index({ createdAt: -1 })

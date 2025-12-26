@@ -74,7 +74,7 @@ class TaskService {
       query.project = filters.project
     }
 
-    let sortOption: Record<string, 1 | -1> = { createdAt: -1 }
+    let sortOption: Record<string, 1 | -1> = { status: 1, order: 1, createdAt: -1 }
     if (filters.sort) {
       const sortField = filters.sort.startsWith('-')
         ? filters.sort.substring(1)
@@ -183,6 +183,75 @@ class TaskService {
     await Task.findByIdAndDelete(taskId)
 
     return { message: 'Task deleted successfully' }
+  }
+
+  async reorderTasks(
+    taskId: string,
+    userId: string,
+    newStatus: string,
+    newOrder: number,
+  ) {
+    const task = await Task.findById(taskId)
+
+    if (!task) {
+      throw new Error('Task not found')
+    }
+
+    if (!(await this.checkProjectAccess(userId, task.project.toString()))) {
+      throw new Error('Access denied')
+    }
+
+    const oldStatus = task.status
+
+    // Si cambia de estado, reorganizar órdenes
+    if (oldStatus !== newStatus) {
+      // Decrementar órdenes en el estado anterior
+      await Task.updateMany(
+        {
+          project: task.project,
+          status: oldStatus,
+          order: { $gt: task.order },
+        },
+        { $inc: { order: -1 } },
+      )
+
+      // Incrementar órdenes en el nuevo estado desde la posición
+      await Task.updateMany(
+        {
+          project: task.project,
+          status: newStatus,
+          order: { $gte: newOrder },
+        },
+        { $inc: { order: 1 } },
+      )
+
+      task.status = newStatus
+      task.order = newOrder
+    } else {
+      // Si está en el mismo estado, solo reordenar
+      if (newOrder > task.order) {
+        await Task.updateMany(
+          {
+            project: task.project,
+            status: newStatus,
+            order: { $gt: task.order, $lte: newOrder },
+          },
+          { $inc: { order: -1 } },
+        )
+      } else if (newOrder < task.order) {
+        await Task.updateMany(
+          {
+            project: task.project,
+            status: newStatus,
+            order: { $gte: newOrder, $lt: task.order },
+          },
+          { $inc: { order: 1 } },
+        )
+      }
+      task.order = newOrder
+    }
+
+    return await task.save()
   }
 
   private async checkProjectAccess(

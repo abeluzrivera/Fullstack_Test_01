@@ -2,6 +2,8 @@ import { CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import type { Task } from '@/types/api'
 import { TaskCard } from './TaskCard'
 import { useState } from 'react'
+import { useReorderTask } from '@/hooks/useTasks'
+import { toast } from 'sonner'
 
 interface KanbanBoardProps {
   tasksByStatus: {
@@ -22,6 +24,7 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
   const [isDropping, setIsDropping] = useState(false)
+  const reorderTask = useReorderTask()
 
   const columns = [
     {
@@ -71,7 +74,24 @@ export function KanbanBoard({
     setIsDropping(true)
 
     try {
+      if (draggedTask) {
+        // Calcular la posición en la que se dejó la tarea
+        const droppedTasks = tasksByStatus[columnId as keyof typeof tasksByStatus] || []
+        const newOrder = droppedTasks.length
+
+        // Llamar al reordenamiento
+        await reorderTask.mutateAsync({
+          id: draggedTask._id,
+          status: columnId,
+          order: newOrder,
+        })
+
+        toast.success('Tarea reordenada')
+      }
       await onDropOnColumn(columnId)
+    } catch (error) {
+      toast.error('Error al reordenar la tarea')
+      console.error('Failed to reorder task:', error)
     } finally {
       setIsDropping(false)
     }

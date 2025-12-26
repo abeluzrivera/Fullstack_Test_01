@@ -12,6 +12,7 @@ router.post('/', validate(createTaskSchema), taskController.createTask)
 router.get('/', taskController.getTasks)
 router.get('/:id', taskController.getTaskById)
 router.put('/:id', validate(updateTaskSchema), taskController.updateTask)
+router.patch('/:id/reorder', taskController.reorderTask)
 router.delete('/:id', taskController.deleteTask)
 
 export default router

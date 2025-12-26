@@ -31,4 +31,12 @@ export const tasksApi = {
   deleteTask: async (id: string) => {
     await apiClient.delete(`/tasks/${id}`)
   },
+
+  reorderTask: async (id: string, status: string, order: number) => {
+    const response = await apiClient.patch<ApiSuccess<Task>>(`/tasks/${id}/reorder`, {
+      status,
+      order,
+    })
+    return response.data.data
+  },
 }
