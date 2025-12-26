@@ -196,34 +196,128 @@ Si tienes dudas sobre los requisitos, no dudes en contactarnos.
 
 # 📖 Instrucciones de Ejecución
 
-> **Nota**: Completa esta sección con las instrucciones para ejecutar tu proyecto.
-
 ## Prerrequisitos
-[Tus prerrequisitos]
+- Node.js v18 o superior
+- npm o yarn
+- MongoDB (local o acceso a MongoDB Atlas)
+- Docker y Docker Compose (opcional, para ejecución containerizada)
 
 ## Instalación
+
+### 1. Clonar el repositorio y acceder al directorio
 ```bash
-# Tus comandos
+git clone <repository-url>
+cd Fullstack_Test_01
+```
+
+### 2. Instalar dependencias del Backend
+```bash
+cd backend
+npm install
+```
+
+### 3. Instalar dependencias del Frontend
+```bash
+cd ../frontend
+npm install
 ```
 
 ## Configuración
+
+### Variables de entorno - Backend
+Crear archivo `.env` en la carpeta `backend/`:
 ```bash
-# Variables de entorno
+MONGODB_URI=mongodb://localhost:27017/project_management
+JWT_SECRET=tu_secreto_jwt_aqui
+ENTRA_CLIENT_ID=tu_client_id
+ENTRA_CLIENT_SECRET=tu_client_secret
+ENTRA_TENANT_ID=tu_tenant_id
+NODE_ENV=development
+PORT=3000
+```
+
+### Variables de entorno - Frontend
+Crear archivo `.env` en la carpeta `frontend/`:
+```bash
+VITE_API_URL=http://localhost:3000/api
 ```
 
 ## Ejecución
+
+### Opción 1: Ejecución Local (sin Docker)
+
+#### Backend
 ```bash
-# Backend
-# Frontend
+cd backend
+npm run dev
+# El servidor estará disponible en http://localhost:3000
+```
+
+#### Frontend (en otra terminal)
+```bash
+cd frontend
+npm run dev
+# La aplicación estará disponible en http://localhost:5173
+```
+
+### Opción 2: Ejecución con Docker Compose
+```bash
+# Desde la raíz del proyecto
+docker-compose up
+# Backend: http://localhost:3000
+# Frontend: http://localhost:5173
+# MongoDB: localhost:27017
+```
+
+### Construcción para Producción
+
+#### Backend
+```bash
+cd backend
+npm run build
+npm start
+```
+
+#### Frontend
+```bash
+cd frontend
+npm run build
+npm preview
 ```
 
 ## Tests
+
+### Tests del Backend
 ```bash
-# Comandos de tests
+cd backend
+
+# Ejecutar todos los tests
+npm test
+
+# Ejecutar tests en modo watch
+npm run test:watch
+
+# Generar reporte de cobertura
+npm run test:coverage
+```
+
+### Linting y Formateo
+```bash
+# Verificar linting
+npm run lint
+
+# Arreglar issues de linting
+npm run lint:fix
+
+# Formatear código
+npm run format
 ```
 
 ## API Documentation
-- Swagger: [Tu URL]
+- Swagger/OpenAPI: `http://localhost:3000/api-docs`
 
 ## Credenciales de Prueba
-[Si aplica]
+- Email: `test@example.com`
+- Password: `Test123!@#`
+
+**Nota**: Las credenciales pueden variar según tu configuración. Consulta la base de datos para usuarios existentes.

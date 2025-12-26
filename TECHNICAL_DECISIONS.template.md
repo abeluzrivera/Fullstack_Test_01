@@ -449,6 +449,7 @@ Si tuviera más tiempo, implementaría:
    Descripción: Permitir que el propietario del proyecto defina quiénes pueden asignar tareas. Actualmente, cualquier miembro puede asignar. Se podría agregar un campo "canAssignTasks" en el modelo de colaborador.
    Beneficio: Control granular sobre quién puede realizar qué acciones dentro del proyecto.
    Código de referencia:
+
    ```typescript
    // En Project.collaborators
    {
@@ -459,6 +460,7 @@ Si tuviera más tiempo, implementaría:
      canDeleteTasks: Boolean
    }
    ```
+   
    Tiempo estimado: 3-4 horas
 
 ## 🚀 Decisiones Clave
