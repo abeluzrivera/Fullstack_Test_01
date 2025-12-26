@@ -282,12 +282,14 @@ Para mejora futura se implementarán tests automatizados:
    - Validación de servicios de proyecto y tareas
    - Pruebas de middleware de validación y manejo de errores
    - Integración con base de datos usando MongoDB Memory Server
+   - **NUEVO:** Se agregaron pruebas para verificar el correcto manejo de errores en los controladores y middleware, asegurando que las respuestas sean consistentes y los errores no expongan información sensible.
 
 2. Frontend con Vitest:
    - Tests de componentes principales (TaskCard, ProjectCard, KanbanBoard)
    - Tests de hooks personalizados (useAuth, useTasks, useProjects)
    - Tests de integración de flujos de usuario
    - Mocks de React Query para aislar lógica de componentes
+   - **NUEVO:** Se añadieron pruebas para validar la accesibilidad de los componentes principales, asegurando que cumplan con estándares WCAG.
 
 ---
 
@@ -398,6 +400,25 @@ Si tuviera más tiempo, implementaría:
    Descripción: Implementar roles como viewer, editor, admin con permisos específicos por recurso.
    Beneficio: Control fino sobre qué pueden ver y modificar los colaboradores.
    Tiempo estimado: 5-7 horas
+
+---
+
+## 🚀 Decisiones Clave
+
+### 1. **Autenticación**
+- **Decisión**: Implementar autenticación basada en JWT.
+- **Razón**: Permite un manejo stateless, escalable y seguro de sesiones.
+- **Alternativas Consideradas**: Cookies de sesión (descartado por complejidad en entornos distribuidos).
+
+### 2. **Gestión de Estado**
+- **Decisión**: Usar Zustand para el manejo de estado global.
+- **Razón**: Sintaxis simple, rendimiento superior y menor sobrecarga comparado con Redux.
+- **Alternativas Consideradas**: Redux Toolkit (descartado por ser más complejo para este caso).
+
+### 3. **Base de Datos**
+- **Decisión**: MongoDB con Mongoose.
+- **Razón**: Flexibilidad de schema y facilidad de integración con Node.js.
+- **Alternativas Consideradas**: PostgreSQL (descartado por requerir migraciones más complejas).
 
 ---
 
